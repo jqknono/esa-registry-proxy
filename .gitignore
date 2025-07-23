@@ -1,0 +1,6 @@
+.env
+*.log
+.DS_Store
+.dev/
+QWEN.md
+GEMINI.md

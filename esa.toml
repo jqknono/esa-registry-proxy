@@ -1,0 +1,11 @@
+name = "esa-registry-proxy"
+description = "Hello World"
+entry = "src/index.js"
+codeVersions = [ ]
+
+[build]
+flags = ["--platform=node"]
+
+[dev]
+port = 18_080
+localUpstream = ""
