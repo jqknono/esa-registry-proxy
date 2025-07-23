@@ -2,14 +2,14 @@
 
 const VERSION = '0.6.0';
 
+// 默认白名单
+const DEFAULT_WHITELIST = ['library/nginx', 'jqknono/weread-challenge', 'adguardprivate/adguardprivate'];
+
 // 是否启用缓存功能，默认不启用
 const ENABLE_CACHE = false;
 
-// 最大缓存时间（一年）
-const MAX_CACHE_AGE = 31536000;
-
-// 默认白名单
-const DEFAULT_WHITELIST = ['library/nginx', 'jqknono/weread-challenge', 'adguardprivate/adguardprivate'];
+// 最大缓存时间（30天）
+const MAX_CACHE_AGE = 86400 * 30;
 
 // 获取环境变量的函数，兼容不同环境
 function getEnvVar(name, defaultValue = null) {

@@ -25,7 +25,6 @@
 您可以在本地测试函数:
 
 ```bash
-cd esa-registry-proxy
 esa dev
 ```
 

@@ -22,8 +22,7 @@
 1. 克隆项目:
 
    ```bash
-   git clone <this-repo>
-   cd esa-registry-proxy
+   git clone https://github.com/jqknono/esa-registry-proxy
    ```
 
 ## 部署到 Alibaba ESA
@@ -61,6 +60,7 @@
    ```
 
 6. 绑定域名:
+
    ```bash
    esa domain add registry.jqknono.com
    ```
