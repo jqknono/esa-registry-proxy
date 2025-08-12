@@ -146,4 +146,4 @@ docker pull registry.jqknono.com/library/nginx
 - [边缘函数 API](https://www.alibabacloud.com/help/zh/edge-security-acceleration/esa/user-guide/api-documentation/)
 - [repo: alibabacloud-esa-cli](https://github.com/aliyun/alibabacloud-esa-cli)
 - [repo: cloudflare-registry-proxy](https://github.com/jqknono/cloudflare-registry-proxy)
-- [赞助: AdguardPrivate - 你的私人 DNS 服务](https://adguardprivate.com)
+- [赞助: NullPrivate - 你的私人 DNS 服务](https://NullPrivate.com)
