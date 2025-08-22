@@ -1,6 +1,6 @@
 // ESA边缘函数入口文件
 
-const VERSION = '0.6.0';
+const VERSION = '0.6.2';
 
 // 默认白名单
 const DEFAULT_WHITELIST = ['library/nginx', 'jqknono/weread-challenge', 'nullprivate/nullprivate'];

@@ -13,7 +13,7 @@ ESA毕竟是阿里云的产品, 对被当作梯子用非常敏感.
 边缘函数设置成功转发后, 速度较慢, 勉强能用.
 
 ### 2025-08-22 更新
-阿里云国际版禁用了全球(不含中国), 仅能设置"**全球(不含中国)**, **全球(含中国)**", 目前实测已经可以正常中转代理docker.
+阿里云国际版禁用了全球(不含中国), 仅能设置"**全球(不含中国)**, **全球(含中国)**", 目前实测已经可以正常速度中转代理docker.
 -->
 
 ## 功能特性
@@ -21,69 +21,26 @@ ESA毕竟是阿里云的产品, 对被当作梯子用非常敏感.
 1. **Docker Registry 代理**: 转发 Docker Hub 请求，提升中国大陆用户下载速度
 2. **镜像白名单**: 限制只能下载指定的镜像，提高安全性
 3. **支持多种匹配模式**: 支持精确匹配和前缀匹配
-4. **智能缓存机制**: 优先使用缓存数据，减少重复请求，提高响应速度
+4. **支持缓存机制**: 默认**未使用**缓存数据，按需开启
 
 ## 快速开始
 
-### 前提条件
-
-- Node.js 16+
-- npm 或 yarn
-- Alibaba ESA 账号及 AccessKey ID 和 Secret
-
-### 安装部署
-
-1. 克隆项目:
-
-   ```bash
-   git clone https://github.com/jqknono/esa-registry-proxy
-   ```
-
 ## 部署到 Alibaba ESA
 
-### 方法一：使用 ESA CLI (推荐)
+![演示](演示.webp)
 
-1. 安装 ESA CLI:
+- 登录阿里云 ESA 控制台
+- 进入边缘函数(EdgeRoutine)管理页面
+- 点击"创建函数"
+- 填写以下信息:
+  - 函数名称: esa-registry-proxy
+  - 描述: Docker Registry Proxy using Alibaba ESA
+- 上传代码:
+  - 直接粘贴 src/index.js 的内容
+- 部署函数
+- 绑定自定义域名或路由
 
-   ```bash
-   npm install esa-cli -g
-   ```
-
-2. 登录 ESA:
-
-   ```bash
-   esa login
-   ```
-
-3. 初始化项目:
-
-   ```bash
-   esa init
-   ```
-
-4. 提交代码:
-
-   ```bash
-   esa commit
-   ```
-
-5. 部署函数:
-
-   ```bash
-   esa deploy
-   ```
-
-6. 绑定域名:
-
-   ```bash
-   esa domain add registry.jqknono.com
-   ```
-
-### 方法二：手动部署
-
-请参考 [DEPLOYMENT.md](DEPLOYMENT.md) 文件获取详细的手动部署说明。
-
-## 白名单功能详解
+## 白名单功能
 
 白名单功能是本项目的核心安全特性，可以限制允许通过代理拉取的 Docker 镜像，防止恶意使用。
 
@@ -98,7 +55,7 @@ WHITELIST=library/nginx,library/redis,library/*
 ### 支持的匹配模式
 
 - **精确匹配**: 如 `library/nginx`，只允许下载完全匹配的镜像
-- **前缀匹配**: 如 `library/*`，允许下载所有 `library` 组织的镜像
+- **前缀匹配**: 如 `jqknono/*`，允许下载所有 `jqknono` 组织的镜像
 
 ### 配置示例
 
@@ -136,7 +93,7 @@ docker pull registry.jqknono.com/library/nginx
 - 利用 Alibaba ESA 的边缘网络加速镜像拉取
 - 支持 Docker Registry v2 API
 - 实现镜像白名单安全控制
-- 利用 ESA Cache API 实现智能缓存，优先使用缓存数据，缓存时间为服务允许的最大值（一年）
+- 利用 ESA Cache API 实现智能缓存，优先使用缓存数据，缓存时间为服务允许的最大值（一个月）
 
 ## 注意事项
 
@@ -150,4 +107,5 @@ docker pull registry.jqknono.com/library/nginx
 - [边缘函数 API](https://www.alibabacloud.com/help/zh/edge-security-acceleration/esa/user-guide/api-documentation/)
 - [repo: alibabacloud-esa-cli](https://github.com/aliyun/alibabacloud-esa-cli)
 - [repo: cloudflare-registry-proxy](https://github.com/jqknono/cloudflare-registry-proxy)
-- [赞助: NullPrivate - 你的私人 DNS 服务](https://NullPrivate.com)
+- [赞助: NullPrivate - 你的私人 DNS 服务](https://www.nullprivate.com)
+- [jqknono的博客](https://blog.jqknono.com/)
