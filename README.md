@@ -2,19 +2,19 @@
 
 这是一个基于 Alibaba ESA (Edge Security Acceleration) 的 Docker Registry 转发代理，为中国大陆用户提供更快的 Docker 镜像下载服务，并实现镜像白名单功能以增强安全性。
 
-<!--
 ## 注意
 
-ESA毕竟是阿里云的产品, 对被当作梯子用非常敏感.  
+ESA 毕竟是阿里云的产品, 对被当作梯子用非常敏感.
 
 ### 2025-06-30 更新
+
 经过实测, 三种区域设置"全球(不含中国), 全球(含中国), 中国"中, 仅设置区域为"**全球(不含中国)**", 才能使本项目正常运行.
-**只要区域设置中包含中国, ESA就不能顺利转发海外流量.**
+**只要区域设置中包含中国, ESA 就不能顺利转发海外流量.**
 边缘函数设置成功转发后, 速度较慢, 勉强能用.
 
 ### 2025-08-22 更新
-阿里云国际版禁用了全球(不含中国), 仅能设置"**全球(不含中国)**, **全球(含中国)**", 目前实测已经可以正常速度中转代理docker.
--->
+
+阿里云国际版禁用了全球(不含中国), 仅能设置"**全球(不含中国)**, **全球(含中国)**", 目前实测中转代理到国内几乎不能用了.
 
 ## 功能特性
 
@@ -25,20 +25,77 @@ ESA毕竟是阿里云的产品, 对被当作梯子用非常敏感.
 
 ## 快速开始
 
-## 部署到 Alibaba ESA
+## 方式一: 手动部署到 Alibaba ESA
 
 ![演示](演示.webp)
 
-- 登录阿里云 ESA 控制台
+<!-- ![演示](https://i.imgur.com/vi0w2ND.gif) -->
+
+- 登录阿里云国际版 ESA 控制台
 - 进入边缘函数(EdgeRoutine)管理页面
 - 点击"创建函数"
 - 填写以下信息:
   - 函数名称: esa-registry-proxy
   - 描述: Docker Registry Proxy using Alibaba ESA
 - 上传代码:
-  - 直接粘贴 src/index.js 的内容
+  - 修改 src/index.js 中 `DEFAULT_WHITELIST` 变量
+  - 粘贴 src/index.js 的内容到边缘函数代码
 - 部署函数
 - 绑定自定义域名或路由
+
+**注意**
+
+默认已开启镜像白名单, 只能下载以下镜像, 使用者需要自行调整.
+
+```javascript
+// 默认白名单
+const DEFAULT_WHITELIST = [
+  "library/nginx",
+  "jqknono/weread-challenge",
+  "nullprivate/nullprivate",
+];
+```
+
+ESA 免费版每日有访问次数限制, 有白名单保护, 可以放心分享镜像链接, 避免被滥用.
+
+## 方式二: 使用ESA CLI部署
+
+1. 安装 ESA CLI:
+
+   ```bash
+   npm install esa-cli -g
+   ```
+
+2. 登录 ESA:
+
+   ```bash
+   esa login
+   ```
+
+3. 初始化项目:
+
+   ```bash
+   esa init
+   ```
+
+4. 提交代码:
+
+   ```bash
+   esa commit
+   ```
+
+5. 部署函数:
+
+   ```bash
+   esa deploy
+   ```
+
+6. 绑定域名:
+
+   ```bash
+   esa domain add registry.jqknono.com
+   ```
+
 
 ## 白名单功能
 
@@ -75,7 +132,7 @@ WHITELIST=jqknono/*
 ### 直接使用
 
 ```bash
-docker pull registry.jqknono.com/library/nginx
+docker pull registry.jqknono.com/library/nginx:latest
 ```
 
 ### 配置 Docker 客户端
@@ -108,4 +165,4 @@ docker pull registry.jqknono.com/library/nginx
 - [repo: alibabacloud-esa-cli](https://github.com/aliyun/alibabacloud-esa-cli)
 - [repo: cloudflare-registry-proxy](https://github.com/jqknono/cloudflare-registry-proxy)
 - [赞助: NullPrivate - 你的私人 DNS 服务](https://www.nullprivate.com)
-- [jqknono的博客](https://blog.jqknono.com/)
+- [jqknono 的博客](https://blog.jqknono.com/)
