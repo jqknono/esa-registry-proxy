@@ -15,8 +15,7 @@
   - 函数名称: esa-registry-proxy
   - 描述: Docker Registry Proxy using Alibaba ESA
 - 上传代码:
-  - 上传文件: esa-registry-proxy/src/index.js
-  - 或者直接粘贴 src/index.js 的内容
+  - 直接粘贴 src/index.js 的内容
 - 部署函数
 - 绑定自定义域名或路由
 
@@ -35,14 +34,14 @@ esa dev
 ```bash
 # 拉取镜像
 docker pull registry.jqknono.com/jqknono/weread-challenge:latest
-docker pull registry.jqknono.com/adguardprivate/adguardprivate:latest
+docker pull registry.jqknono.com/nullprivate/nullprivate:latest
 
 
 # 或配置 Docker daemon 使用镜像仓库
 # 在 /etc/docker/daemon.json 中添加:
 {
   "registry-mirrors": [
-    "https://registry.jqknono.com"
+    "https://registry.example.com"
   ]
 }
 ```
