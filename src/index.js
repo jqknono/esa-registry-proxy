@@ -3,7 +3,7 @@
 const VERSION = '0.6.0';
 
 // 默认白名单
-const DEFAULT_WHITELIST = ['library/nginx', 'jqknono/weread-challenge', 'adguardprivate/adguardprivate'];
+const DEFAULT_WHITELIST = ['library/nginx', 'jqknono/weread-challenge', 'nullprivate/nullprivate'];
 
 // 是否启用缓存功能，默认不启用
 const ENABLE_CACHE = false;
