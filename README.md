@@ -27,7 +27,7 @@ ESA 毕竟是阿里云的产品, 对被当作梯子用非常敏感.
 
 ## 方式一: 手动部署到 Alibaba ESA
 
-![演示](演示.webp)
+![演示](./演示.webp)
 
 <!-- ![演示](https://i.imgur.com/vi0w2ND.gif) -->
 
