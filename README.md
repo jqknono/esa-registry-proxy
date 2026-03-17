@@ -1,3 +1,4 @@
+# Archived due to docker.io 504
 # ESA Docker Registry Proxy
 
 这是一个部署在 Alibaba ESA (Edge Security Acceleration) 上的 Docker Registry 代理。
