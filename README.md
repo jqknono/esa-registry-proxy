@@ -1,168 +1,151 @@
 # ESA Docker Registry Proxy
 
-这是一个基于 Alibaba ESA (Edge Security Acceleration) 的 Docker Registry 转发代理，为中国大陆用户提供更快的 Docker 镜像下载服务，并实现镜像白名单功能以增强安全性。
+这是一个部署在 Alibaba ESA (Edge Security Acceleration) 上的 Docker Registry 代理。
 
-## 注意
+当前版本只保留**纯直连模式**：
 
-ESA 毕竟是阿里云的产品, 对被当作梯子用非常敏感.
+- `manifest` 直接代理到 upstream
+- `blob` 保持 Docker Hub 的 `307` 跳转语义
+- `auth` 保持 Docker Registry 标准 challenge，由客户端直连上游 token 服务
+- 不依赖 OSS
+- 不依赖预热脚本
+- 不依赖外部缓存或索引
 
-### 2025-06-30 更新
+## 为什么这样更快
 
-经过实测, 三种区域设置"全球(不含中国), 全球(含中国), 中国"中, 仅设置区域为"**全球(不含中国)**", 才能使本项目正常运行.
-**只要区域设置中包含中国, ESA 就不能顺利转发海外流量.**
-边缘函数设置成功转发后, 速度较慢, 勉强能用.
+旧版实现会在 ESA 函数里手动跟随 Docker Hub 的 `307`，导致大层文件继续经 ESA 中转。这样会带来：
 
-### 2025-08-22 更新
+- 首次 `docker pull` 大文件慢
+- ESA 函数执行时长和带宽压力大
+- blob 请求可能把不该透传的请求头带到下游对象存储
 
-阿里云国际版禁用了全球(不含中国), 仅能设置"**全球(不含中国)**, **全球(含中国)**", 目前实测中转代理到国内几乎不能用了.
+现在的运行时行为是：
+
+1. `GET /v2/`：透传上游 Registry 的标准 `401` challenge
+2. `GET/HEAD /v2/<image>/manifests/<reference>`：直接代理到 upstream
+3. `GET/HEAD /v2/<image>/blobs/<digest>`：优先保留上游 `307` 跳转
+4. 普通 registry API 请求直接透传 upstream
 
 ## 功能特性
 
-1. **Docker Registry 代理**: 转发 Docker Hub 请求，提升中国大陆用户下载速度
-2. **镜像白名单**: 限制只能下载指定的镜像，提高安全性
-3. **支持多种匹配模式**: 支持精确匹配和前缀匹配
-4. **支持缓存机制**: 默认**未使用**缓存数据，按需开启
+- Docker Registry v2 代理
+- 镜像白名单控制
+- 纯直连代理模式
+- manifest 小对象短缓存
 
-## 快速开始
+## 目录说明
 
-## 方式一: 手动部署到 Alibaba ESA
+- `src/index.js`：ESA 边缘函数入口
 
-![演示](演示.webp)
+## 配置方式
 
-<!-- ![演示](https://i.imgur.com/vi0w2ND.gif) -->
+不再使用环境变量。
 
-- 登录阿里云国际版 ESA 控制台
-- 进入边缘函数(EdgeRoutine)管理页面
-- 点击"创建函数"
-- 填写以下信息:
-  - 函数名称: esa-registry-proxy
-  - 描述: Docker Registry Proxy using Alibaba ESA
-- 上传代码:
-  - 修改 src/index.js 中 `DEFAULT_WHITELIST` 变量
-  - 粘贴 src/index.js 的内容到边缘函数代码
-- 部署函数
-- 绑定自定义域名或路由
+请直接修改 `src/index.js` 顶部的 `CONFIG` 常量配置区：
 
-**注意**
+- `whitelist`
+- `enableManifestCache`
+- `manifestCacheTtl`
+- `enableDebugEndpoint`
 
-默认已开启镜像白名单, 只能下载以下镜像, 使用者需要自行调整.
+### 关键说明
 
-```javascript
-// 默认白名单
-const DEFAULT_WHITELIST = [
-  "library/nginx",
-  "jqknono/weread-challenge",
-  "nullprivate/nullprivate",
-];
+- **上游已锁定为 Docker Hub 官方** (`registry-1.docker.io`)，代码中不提供任何 profile 切换或上游覆盖能力
+- `UPSTREAM` 常量使用 `Object.freeze()` 冻结，运行时无法被修改
+- `whitelist`：允许拉取的镜像列表，支持 `library/*` 这种前缀匹配
+- `enableManifestCache`：是否启用 manifest 短缓存
+- `manifestCacheTtl`：manifest 缓存秒数
+- `enableDebugEndpoint`：是否保留基础调试能力
+
+### 上游说明
+
+上游固定为 Docker Hub 官方 Registry：
+
+| 配置项 | 值 |
+| --- | --- |
+| Registry Host | `registry-1.docker.io` |
+| Auth URL | `https://auth.docker.io/token` |
+| Auth Service | `registry.docker.io` |
+
+不支持切换到 DaoCloud 或其他镜像站。如需使用其他上游，必须修改源码中的 `UPSTREAM` 常量并重新部署。
+
+## 使用 ESA CLI 发布
+
+### 前置条件
+
+1. 安装 ESA CLI：`npm install -g esa-cli`
+2. 登录：`esa login`
+3. 在仓库根目录执行命令，确保存在 [esa.toml](/home/test/code/esa-registry-proxy/esa.toml)
+4. 发布前先检查 [src/index.js](/home/test/code/esa-registry-proxy/src/index.js) 顶部 `CONFIG` 是否符合目标环境
+
+### 发布到 Stage
+
+```bash
+esa deploy --environment staging
 ```
 
-ESA 免费版每日有访问次数限制, 有白名单保护, 可以放心分享镜像链接, 避免被滥用.
+推荐发布后立即检查：
 
-## 方式二: 使用ESA CLI部署
-
-1. 安装 ESA CLI:
-
-   ```bash
-   npm install esa-cli -g
-   ```
-
-2. 登录 ESA:
-
-   ```bash
-   esa login
-   ```
-
-3. 初始化项目:
-
-   ```bash
-   esa init
-   ```
-
-4. 提交代码:
-
-   ```bash
-   esa commit
-   ```
-
-5. 部署函数:
-
-   ```bash
-   esa deploy
-   ```
-
-6. 绑定域名:
-
-   ```bash
-   esa domain add registry.jqknono.com
-   ```
-
-
-## 白名单功能
-
-白名单功能是本项目的核心安全特性，可以限制允许通过代理拉取的 Docker 镜像，防止恶意使用。
-
-### 白名单配置格式
-
-白名单配置为逗号分隔的字符串，每个字符串代表一个允许下载的镜像名称模式:
-
-```env
-WHITELIST=library/nginx,library/redis,library/*
+```bash
+esa deployments list
+curl https://registry.jqknono.com/version
+curl -i https://registry.jqknono.com/v2/
+docker pull registry.jqknono.com/library/nginx:latest
 ```
 
-### 支持的匹配模式
+### 发布到 Production
 
-- **精确匹配**: 如 `library/nginx`，只允许下载完全匹配的镜像
-- **前缀匹配**: 如 `jqknono/*`，允许下载所有 `jqknono` 组织的镜像
+确认 `staging` 已验证通过后，再执行：
 
-### 配置示例
-
-```env
-# 只允许官方nginx和redis镜像
-WHITELIST=library/nginx,library/redis
-
-# 允许所有官方镜像
-WHITELIST=library/*
-
-# 允许特定组织的所有镜像
-WHITELIST=jqknono/*
+```bash
+esa deploy --environment production
 ```
+
+推荐发布后立即检查：
+
+```bash
+esa deployments list
+curl https://esa-registry-proxy.a4565ffd.er.aliyun-esa.net/version
+curl -i https://esa-registry-proxy.a4565ffd.er.aliyun-esa.net/v2/
+docker pull <你的生产域名>/library/nginx:latest
+```
+
+### 查看当前部署版本
+
+```bash
+esa deployments list
+```
+
+输出里会分别显示 `Staging` 和 `Production` 的活动版本号。
+
+### 回滚方式
+
+若刚发布的版本有问题，先用 `esa deployments list` 记录当前活动版本和可回退版本。
+
+这个 README 只覆盖“发布当前工作区代码”。如果你需要精确回滚到某个旧 code version，建议在 ESA 控制台或你当前使用的 CLI 版本管理命令里重新激活目标版本，再按上面的验证命令检查。
+
+## 旧版部署流程
+
+1. 登录阿里云 ESA 控制台
+2. 创建或更新边缘函数
+3. 部署 `src/index.js`
+4. 按需修改 `src/index.js` 顶部配置常量
+5. 绑定域名，例如 `registry.jqknono.com`
 
 ## 使用方式
-
-### 直接使用
 
 ```bash
 docker pull registry.jqknono.com/library/nginx:latest
 ```
 
-### 配置 Docker 客户端
+## 验证建议
 
-在 Docker 配置中添加镜像仓库:
-
-```json
-{
-  "registry-mirrors": ["https://registry.jqknono.com"]
-}
-```
-
-## 技术实现
-
-- 利用 Alibaba ESA 的边缘网络加速镜像拉取
-- 支持 Docker Registry v2 API
-- 实现镜像白名单安全控制
-- 利用 ESA Cache API 实现智能缓存，优先使用缓存数据，缓存时间为服务允许的最大值（一个月）
+- `GET /v2/` 应返回 Docker Registry 标准 `401` 与 `WWW-Authenticate`
+- `latest` / `manifest` / `blob` 都应正常透传 upstream
+- blob 请求应返回 `307` 并保持上游跳转
+- 非白名单镜像仍返回 `403`
 
 ## 注意事项
 
-- 此项目主要用于个人开发环境或小型团队使用
-- 大规模生产环境建议使用专业的镜像仓库服务
-- 请确保您的 Alibaba ESA 账户有足够的配额
-
-## 参考
-
-- [边缘安全加速 ESA 开发参考](https://www.alibabacloud.com/help/zh/edge-security-acceleration/esa/api-reference-1-1/)
-- [边缘函数 API](https://www.alibabacloud.com/help/zh/edge-security-acceleration/esa/user-guide/api-documentation/)
-- [repo: alibabacloud-esa-cli](https://github.com/aliyun/alibabacloud-esa-cli)
-- [repo: cloudflare-registry-proxy](https://github.com/jqknono/cloudflare-registry-proxy)
-- [赞助: NullPrivate - 你的私人 DNS 服务](https://www.nullprivate.com)
-- [jqknono 的博客](https://blog.jqknono.com/)
+- 当前实现不再包含 OSS、预热、外部缓存、索引切换相关逻辑
+- 行为更简单，但所有流量都会回到 Docker Hub 或其下游跳转地址
